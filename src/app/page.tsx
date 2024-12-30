@@ -1,12 +1,13 @@
 import Link from "next/link";
 import ButtonRedirect from "./components/ButtonRedirect";
-import { redirect } from "next/navigation";
+// import { redirect } from "next/navigation";
+import { ModeToggle } from "@/components/toggle-theme";
 
-const isAuth = false
+// const isAuth = false
 export default function Home() {
-if (!isAuth) {
-  redirect('/login')
-}
+// if (!isAuth) {
+//   redirect('/login')
+// }
   return <main>
     <ul>
       <li>
@@ -17,5 +18,6 @@ if (!isAuth) {
       </li>
     </ul>
     <ButtonRedirect/>
+    <ModeToggle/>hmmm
   </main>
 }
