@@ -13,10 +13,13 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { RegisterBody, RegisterBodyType } from "@/schemaValidations/auth.schema"
-import envConfig from "@/config"
+import authApiRequest from "@/apiRequests/auth"
+import { useToast } from "@/hooks/use-toast"
+import { useRouter } from "next/navigation"
 
 
 export const RegisterForm = () => {
+  const {toast} = useToast()
   const form = useForm<RegisterBodyType>({
     resolver: zodResolver(RegisterBody),
     defaultValues: {
@@ -27,16 +30,46 @@ export const RegisterForm = () => {
     },
   })
 
-  function onSubmit(values: RegisterBodyType) {
-    fetch(`${envConfig.NEXT_PUBLIC_API_ENDPOINT}/auth/register`, {
-      body: JSON.stringify(values),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }).then((res) => res.json())
-  }
+  const router = useRouter()
 
-    return (
+  async function onSubmit(values: RegisterBodyType) {
+    try {
+      const result = await authApiRequest.register(values)
+      await authApiRequest.auth({
+        sessionToken: result.payload.data.token,
+        expiresAt: result.payload.data.expiresAt
+      })
+
+      toast({
+        description: result.payload.message,
+      })
+
+      router.push("/me")
+
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        const errorMessage = error.message || "An error occurred. Please try again."
+
+        if (error instanceof Response && error.status === 422) {
+          toast({
+            variant: "destructive",
+            description: "Vui lòng điền đầy đủ thông tin",
+          })
+        } else {
+          toast({
+            variant: "destructive",
+            description: errorMessage,
+          })
+        }
+      } else {
+        toast({
+          variant: "destructive",
+          description: "An unexpected error occurred.",
+        })
+      }
+    }
+  }
+  return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2 max-w-[600px] flex-shrink-0 w-full" noValidate>
         <FormField
