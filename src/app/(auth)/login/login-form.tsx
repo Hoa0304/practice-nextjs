@@ -13,11 +13,13 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { LoginBody, LoginBodyType } from "@/schemaValidations/auth.schema"
-import envConfig from "@/config"
-
+import { useToast } from "@/hooks/use-toast"
+import { useRouter } from "next/navigation"
+import authApiRequest from "@/apiRequests/auth"
 
 export const LoginForm = () => {
-  const form = useForm< LoginBodyType>({
+  const {toast} = useToast()
+  const form = useForm<LoginBodyType>({
     resolver: zodResolver(LoginBody),
     defaultValues: {
       email: "",
@@ -25,27 +27,47 @@ export const LoginForm = () => {
     },
   })
 
-  function onSubmit(values: LoginBodyType) {
-    fetch(`${envConfig.NEXT_PUBLIC_API_ENDPOINT}/auth/login`, {
-      body: JSON.stringify(values),
-      headers: {
-        "Content-Type": "application/json",
-      },
-      method: "POST",
-    }).then(async (res) => {
-      const payload = await res.json()
-      const data = {
-        status: res.status,
-        payload
+  const router = useRouter()
+
+  async function onSubmit(values: LoginBodyType) {
+    try {
+      const result = await authApiRequest.login(values)
+      await authApiRequest.auth({
+        sessionToken: result.payload.data.token,
+        expiresAt: result.payload.data.expiresAt
+      })
+      toast({
+        description: result.payload.message,
+      })
+
+      router.push("/me")
+      router.refresh()
+
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        const errorMessage = error.message || "An error occurred. Please try again."
+
+        if (error instanceof Response && error.status === 422) {
+          toast({
+            variant: "destructive",
+            description: "Vui lòng điền đầy đủ thông tin",
+          })
+        } else {
+          toast({
+            variant: "destructive",
+            description: errorMessage,
+          })
+        }
+      } else {
+        toast({
+          variant: "destructive",
+          description: "An unexpected error occurred.",
+        })
       }
-      if (res.ok) {
-        throw data
-      }
-      return data
-    })
+    } 
   }
 
-    return (
+  return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2 max-w-[600px] flex-shrink-0 w-full" noValidate>
         <FormField
@@ -55,7 +77,7 @@ export const LoginForm = () => {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="shadcn" type="email" {...field} />
+                <Input placeholder="Nhập email của bạn" type="email" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -68,7 +90,7 @@ export const LoginForm = () => {
             <FormItem>
               <FormLabel>Mật khẩu</FormLabel>
               <FormControl>
-                <Input placeholder="shadcn" type="password" {...field} />
+                <Input placeholder="Nhập mật khẩu của bạn" type="password" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
