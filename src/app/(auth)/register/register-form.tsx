@@ -16,10 +16,13 @@ import { RegisterBody, RegisterBodyType } from "@/schemaValidations/auth.schema"
 import authApiRequest from "@/apiRequests/auth"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
+import { useState } from "react"
 
 
 export const RegisterForm = () => {
-  const {toast} = useToast()
+  const [loading, setLoading] = useState(false)
+
+  const { toast } = useToast()
   const form = useForm<RegisterBodyType>({
     resolver: zodResolver(RegisterBody),
     defaultValues: {
@@ -33,6 +36,8 @@ export const RegisterForm = () => {
   const router = useRouter()
 
   async function onSubmit(values: RegisterBodyType) {
+    if (loading) return
+    setLoading(true)
     try {
       const result = await authApiRequest.register(values)
       await authApiRequest.auth({
@@ -67,6 +72,8 @@ export const RegisterForm = () => {
           description: "An unexpected error occurred.",
         })
       }
+    } finally {
+      setLoading(false)
     }
   }
   return (

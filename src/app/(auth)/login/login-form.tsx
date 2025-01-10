@@ -16,8 +16,10 @@ import { LoginBody, LoginBodyType } from "@/schemaValidations/auth.schema"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 import authApiRequest from "@/apiRequests/auth"
+import { useState } from "react"
 
 export const LoginForm = () => {
+  const [loading, setLoading] = useState(false)
   const {toast} = useToast()
   const form = useForm<LoginBodyType>({
     resolver: zodResolver(LoginBody),
@@ -30,6 +32,8 @@ export const LoginForm = () => {
   const router = useRouter()
 
   async function onSubmit(values: LoginBodyType) {
+    if(loading) return
+    setLoading(true)
     try {
       const result = await authApiRequest.login(values)
       await authApiRequest.auth({
@@ -64,7 +68,9 @@ export const LoginForm = () => {
           description: "An unexpected error occurred.",
         })
       }
-    } 
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
