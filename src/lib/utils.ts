@@ -4,7 +4,7 @@ import { EntityError } from "./http";
 import { toast } from "@/hooks/use-toast";
 import { UseFormSetError } from "react-hook-form";
 
-type ApiError = {
+export type ApiError = {
   payload: {
     message: string;
   };
